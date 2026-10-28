@@ -1,0 +1,163 @@
+
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Наши хотелки — Вход</title>
+
+    <link rel="stylesheet" href="style.css">
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="script.js" defer></script>
+</head>
+<body>
+    <main class="auth-page">
+        <section class="auth-intro">
+            <a class="logo" href="index.html">
+                НХ<span>.</span>
+            </a>
+
+            <div class="intro-text">
+                <p class="eyebrow">НАШЕ ОБЩЕЕ ПРОСТРАНСТВО</p>
+
+                <h1>
+                    Меньше хаоса.<br>
+                    Больше <span>планов.</span>
+                </h1>
+
+                <p class="intro-description">
+                    Собирайте хотелки, обсуждайте приоритеты
+                    и решайте, на что копить вместе.
+                </p>
+            </div>
+
+            <p class="intro-footer">
+                Ваши планы — в одном месте.
+            </p>
+        </section>
+
+        <section class="auth-section">
+            <div class="auth-card">
+                <p class="card-caption">СЕМЕЙНЫЙ ТИР-ЛИСТ</p>
+
+                <div class="auth-tabs">
+                    <button
+                        class="auth-tab active"
+                        id="login-tab"
+                        type="button"
+                    >
+                        Войти
+                    </button>
+
+                    <button
+                        class="auth-tab"
+                        id="register-tab"
+                        type="button"
+                    >
+                        Регистрация
+                    </button>
+                </div>
+
+                <h2 id="form-title">С возвращением</h2>
+
+                <p class="form-description" id="form-description">
+                    Войди, чтобы продолжить планировать покупки.
+                </p>
+
+                <form id="auth-form">
+                    <div class="form-group" id="name-field" hidden>
+                        <label for="display-name">
+                            Как тебя называть?
+                        </label>
+
+                        <input
+                            id="display-name"
+                            name="display-name"
+                            type="text"
+                            placeholder="Например, Коленька"
+                            autocomplete="nickname"
+                            minlength="2"
+                            maxlength="40"
+                            disabled
+                        >
+                    </div>
+
+                    <div class="form-group">
+                        <label for="email">
+                            Электронная почта
+                        </label>
+
+                        <input
+                            id="email"
+                            name="email"
+                            type="email"
+                            placeholder="name@example.com"
+                            autocomplete="email"
+                            required
+                        >
+                    </div>
+
+                    <div class="form-group">
+                        <label for="password">Пароль</label>
+
+                        <input
+                            id="password"
+                            name="password"
+                            type="password"
+                            placeholder="Минимум 6 символов"
+                            minlength="6"
+                            autocomplete="current-password"
+                            required
+                        >
+                    </div>
+
+                    <div class="form-group" id="confirm-field" hidden>
+                        <label for="confirm-password">
+                            Повтори пароль
+                        </label>
+
+                        <input
+                            id="confirm-password"
+                            name="confirm-password"
+                            type="password"
+                            placeholder="Введи пароль ещё раз"
+                            minlength="6"
+                            autocomplete="new-password"
+                            disabled
+                        >
+                    </div>
+
+                    <button
+                        class="submit-button"
+                        id="submit-button"
+                        type="submit"
+                    >
+                        Войти в аккаунт <span>→</span>
+                    </button>
+
+                    <p
+                        class="form-message"
+                        id="form-message"
+                        aria-live="polite"
+                    ></p>
+
+                    <button
+                        class="logout-button"
+                        id="logout-button"
+                        type="button"
+                        hidden
+                    >
+                        Выйти из аккаунта
+                    </button>
+                </form>
+
+                <p class="privacy-note">
+                    Только для участников вашей семьи.
+                </p>
+            </div>
+        </section>
+    </main>
+</body>
+</html>

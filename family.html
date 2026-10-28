@@ -1,0 +1,116 @@
+
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Семья — Наши хотелки</title>
+
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="family.js" defer></script>
+</head>
+<body class="tier-page">
+
+    <header class="site-header">
+        <a class="logo" href="families.html">НХ<span>.</span></a>
+        <a class="back-link" href="families.html">← Все семьи</a>
+    </header>
+
+    <main class="family-detail-main">
+        <section class="family-detail-heading">
+            <div>
+                <p class="eyebrow">ВАШЕ ОБЩЕЕ ПРОСТРАНСТВО</p>
+                <h1 id="family-title">Загружаю семью<span>.</span></h1>
+                <p class="tier-subtitle" id="family-description">
+                    Общие планы и приоритеты.
+                </p>
+            </div>
+
+            <div class="family-detail-stats">
+                <span id="members-count">— участников</span>
+                <span id="lists-count">— из 3 тир-листов</span>
+            </div>
+        </section>
+
+        <section class="family-tierlists-section">
+            <div class="section-heading">
+                <h2>Тир-листы</h2>
+                <span>Каждый список — отдельные приоритеты</span>
+            </div>
+
+            <p
+                class="families-feedback"
+                id="family-message"
+                aria-live="polite"
+            >Загружаю тир-листы...</p>
+
+            <div class="family-tierlists-grid" id="tierlists-grid"></div>
+        </section>
+
+        <section class="family-members-section">
+            <div class="section-heading">
+                <h2>Участники</h2>
+                <span>Ваша команда</span>
+            </div>
+
+            <div class="family-members-list" id="family-members-list"></div>
+
+            <p class="prototype-note">
+                Приглашения по электронной почте добавим следующим этапом.
+            </p>
+        </section>
+    </main>
+
+    <!-- Окно создания тир-листа -->
+    <div class="modal-overlay" id="tierlist-modal" hidden>
+        <section
+            class="family-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="tierlist-modal-title"
+        >
+            <button
+                class="modal-close"
+                id="close-tierlist-modal"
+                type="button"
+                aria-label="Закрыть"
+            >×</button>
+
+            <p class="eyebrow">НОВЫЙ СПИСОК</p>
+            <h2 id="tierlist-modal-title">Создать тир-лист<span>.</span></h2>
+
+            <p class="modal-description">
+                Например, «Крупные покупки», «Для дома» или «Для удовольствия».
+            </p>
+
+            <form id="create-tierlist-form">
+                <label for="tierlist-name">Название тир-листа</label>
+
+                <input
+                    id="tierlist-name"
+                    name="tierlist-name"
+                    type="text"
+                    minlength="2"
+                    maxlength="80"
+                    placeholder="Например, Крупные покупки"
+                    required
+                >
+
+                <button
+                    class="submit-button"
+                    id="create-tierlist-submit"
+                    type="submit"
+                >
+                    Создать список <span>→</span>
+                </button>
+
+                <p class="form-message" id="tierlist-modal-message"
+                   aria-live="polite"></p>
+            </form>
+        </section>
+    </div>
+
+</body>
+</html>

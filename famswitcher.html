@@ -1,0 +1,204 @@
+
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Мои семьи — Наши хотелки</title>
+
+    <link rel="stylesheet" href="style.css">
+
+    <!-- Клиент Supabase -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <!-- Логика страницы -->
+    <script src="families.js" defer></script>
+</head>
+
+<body>
+    <div class="families-page">
+
+        <!-- Верхняя панель -->
+        <header class="site-header">
+            <a class="logo" href="index.html" aria-label="Наши хотелки">
+                НХ<span>.</span>
+            </a>
+
+            <div class="profile">
+                <div class="profile-avatar" aria-hidden="true">
+                    К
+                </div>
+
+                <div class="profile-info">
+                    <span class="profile-name" id="profile-name">
+                        Аккаунт
+                    </span>
+
+                    <span class="profile-label">
+                        Мой аккаунт
+                    </span>
+                </div>
+
+                <button
+                    class="profile-menu"
+                    id="profile-menu"
+                    type="button"
+                    aria-label="Выйти из аккаунта"
+                    title="Выйти из аккаунта"
+                >
+                    ⋯
+                </button>
+            </div>
+        </header>
+
+
+        <!-- Основное содержимое -->
+        <main class="families-main">
+
+            <!-- Заголовок и лимит семей -->
+            <section class="families-heading">
+                <div>
+                    <p class="eyebrow">
+                        ВАШЕ ОБЩЕЕ ПРОСТРАНСТВО
+                    </p>
+
+                    <h1>
+                        Выбирай свою<br>
+                        <span>семью.</span>
+                    </h1>
+
+                    <p class="families-subtitle">
+                        У каждой семьи свои планы, хотелки
+                        и приоритеты. Всё в одном месте.
+                    </p>
+                </div>
+
+                <div class="family-limit">
+                    <span class="limit-number">
+                        <span id="family-count">00</span>
+                        <span>/ 03</span>
+                    </span>
+
+                    <span class="limit-caption">
+                        СЕМЬИ
+                    </span>
+
+                    <div class="limit-progress" id="limit-progress">
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                    </div>
+                </div>
+            </section>
+
+
+            <!-- Список семей -->
+            <section class="families-section">
+                <div class="section-heading">
+                    <h2>Твои семьи</h2>
+
+                    <span>
+                        Выбери, куда отправиться
+                    </span>
+                </div>
+
+                <!-- Здесь JavaScript отобразит реальные семьи -->
+                <p
+                    class="families-feedback"
+                    id="families-message"
+                    aria-live="polite"
+                >
+                    Загружаю семьи...
+                </p>
+
+                <div
+                    class="family-grid"
+                    id="family-grid"
+                ></div>
+            </section>
+
+
+            <!-- Нижняя подпись -->
+            <footer class="families-footer">
+                <span>
+                    НХ. — ВАШИ ПЛАНЫ, ВАШИ ПРАВИЛА.
+                </span>
+
+                <span>
+                    До 3 семей на аккаунт
+                </span>
+            </footer>
+
+        </main>
+    </div>
+
+
+    <!-- Окно создания семьи -->
+    <div
+        class="modal-overlay"
+        id="family-modal"
+        hidden
+    >
+        <section
+            class="family-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="modal-title"
+        >
+            <button
+                class="modal-close"
+                id="close-modal"
+                type="button"
+                aria-label="Закрыть окно"
+            >
+                ×
+            </button>
+
+            <p class="eyebrow">
+                НОВОЕ ПРОСТРАНСТВО
+            </p>
+
+            <h2 id="modal-title">
+                Создать семью<span>.</span>
+            </h2>
+
+            <p class="modal-description">
+                Придумай название. После создания сможешь
+                пригласить близких по электронной почте.
+            </p>
+
+            <form id="create-family-form">
+                <label for="family-name">
+                    Название семьи
+                </label>
+
+                <input
+                    id="family-name"
+                    name="family-name"
+                    type="text"
+                    minlength="2"
+                    maxlength="60"
+                    placeholder="Например, Наш дом"
+                    autocomplete="off"
+                    required
+                >
+
+                <button
+                    class="submit-button"
+                    type="submit"
+                >
+                    Продолжить <span>→</span>
+                </button>
+
+                <p
+                    class="form-message"
+                    id="modal-message"
+                    aria-live="polite"
+                ></p>
+            </form>
+        </section>
+    </div>
+
+</body>
+</html>
