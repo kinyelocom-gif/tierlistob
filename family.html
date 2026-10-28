@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="ru">
 <head>
@@ -9,15 +8,25 @@
 
     <link rel="stylesheet" href="style.css">
 
+    <!-- Клиент Supabase -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <!-- Логика страницы семьи -->
     <script src="family.js" defer></script>
 </head>
 
 <body class="tier-page">
 
-    <!-- Верхняя панель -->
+    <!-- ==========================================
+         ВЕРХНЯЯ ПАНЕЛЬ
+    =========================================== -->
+
     <header class="site-header">
-        <a class="logo" href="famswitcher.html" aria-label="Наши хотелки">
+        <a
+            class="logo"
+            href="famswitcher.html"
+            aria-label="Наши хотелки"
+        >
             НХ<span>.</span>
         </a>
 
@@ -27,11 +36,15 @@
     </header>
 
 
-    <!-- Основное содержимое семьи -->
+    <!-- ==========================================
+         ОСНОВНОЕ СОДЕРЖИМОЕ
+    =========================================== -->
+
     <main class="family-detail-main">
 
         <!-- Информация о семье -->
         <section class="family-detail-heading">
+
             <div>
                 <p class="eyebrow">
                     ВАШЕ ОБЩЕЕ ПРОСТРАНСТВО
@@ -41,12 +54,16 @@
                     Загружаю семью<span>.</span>
                 </h1>
 
-                <p class="tier-subtitle" id="family-description">
+                <p
+                    class="tier-subtitle"
+                    id="family-description"
+                >
                     Общие планы, хотелки и приоритеты.
                 </p>
             </div>
 
             <div class="family-detail-actions">
+
                 <div class="family-detail-stats">
                     <span id="members-count">
                         Загружаю участников...
@@ -57,6 +74,7 @@
                     </span>
                 </div>
 
+                <!-- Приглашение участников -->
                 <button
                     class="secondary-button"
                     id="invite-member-button"
@@ -65,12 +83,28 @@
                 >
                     ✉ Пригласить участника
                 </button>
+
+                <!-- Удаление всей семьи -->
+                <button
+                    class="secondary-button delete-family-button"
+                    id="delete-family-button"
+                    type="button"
+                    hidden
+                >
+                    Удалить семью
+                </button>
+
             </div>
+
         </section>
 
 
-        <!-- Тир-листы семьи -->
+        <!-- ==========================================
+             ТИР-ЛИСТЫ СЕМЬИ
+        =========================================== -->
+
         <section class="family-tierlists-section">
+
             <div class="section-heading">
                 <h2>Тир-листы</h2>
 
@@ -79,6 +113,7 @@
                 </span>
             </div>
 
+            <!-- JavaScript выводит сообщения об ошибках и статус -->
             <p
                 class="families-feedback"
                 id="family-message"
@@ -87,15 +122,21 @@
                 Загружаю тир-листы...
             </p>
 
+            <!-- Сюда JavaScript добавляет карточки списков -->
             <div
                 class="family-tierlists-grid"
                 id="tierlists-grid"
             ></div>
+
         </section>
 
 
-        <!-- Участники -->
+        <!-- ==========================================
+             УЧАСТНИКИ СЕМЬИ
+        =========================================== -->
+
         <section class="family-members-section">
+
             <div class="section-heading">
                 <h2>Участники</h2>
 
@@ -104,15 +145,17 @@
                 </span>
             </div>
 
+            <!-- JavaScript выводит реальных участников -->
             <div
                 class="family-members-list"
                 id="family-members-list"
             ></div>
 
             <p class="prototype-note">
-                Участники смогут вместе добавлять хотелки,
-                менять их приоритеты и отмечать покупки.
+                Вместе добавляйте хотелки, меняйте их приоритеты
+                и отмечайте покупки.
             </p>
+
         </section>
 
 
@@ -145,6 +188,7 @@
             aria-modal="true"
             aria-labelledby="tierlist-modal-title"
         >
+
             <button
                 class="modal-close"
                 id="close-tierlist-modal"
@@ -199,6 +243,7 @@
                 ></p>
 
             </form>
+
         </section>
     </div>
 
@@ -218,6 +263,7 @@
             aria-modal="true"
             aria-labelledby="invite-modal-title"
         >
+
             <button
                 class="modal-close"
                 id="close-invite-modal"
@@ -278,8 +324,14 @@
                 ></p>
 
             </form>
+
         </section>
     </div>
+
+
+    <!-- ==========================================
+         КОНЕЦ СТРАНИЦЫ
+    =========================================== -->
 
 </body>
 </html>
