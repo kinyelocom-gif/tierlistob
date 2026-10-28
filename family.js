@@ -705,6 +705,8 @@ deleteFamilyButton.addEventListener("click", async () => {
    УПРАВЛЕНИЕ МОДАЛЬНЫМИ ОКНАМИ
 ========================================= */
 
+inviteButton.addEventListener("click", openInviteModal);
+
 closeTierlistModalButton.addEventListener(
     "click",
     closeTierlistModal
