@@ -241,7 +241,7 @@ async function initialize() {
     }
 
     if (!familyId) {
-        window.location.replace("families.html");
+        window.location.replace("famswitcher.html");
         return;
     }
 

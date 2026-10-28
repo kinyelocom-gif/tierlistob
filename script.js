@@ -255,7 +255,7 @@ async function checkSession() {
     }
 
     if (data.session) {
-    window.location.replace("families.html");
+    window.location.replace("famswitcher.html");
     return;
 }
 }
