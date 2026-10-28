@@ -1,4 +1,3 @@
-
 const SUPABASE_URL = "https://ggpebincglevmsgkfyah.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_kybTUuZyvCYrUBCTf3U4uA_nZINdYbH";
 
@@ -33,8 +32,10 @@ const inviteModal = document.querySelector("#invite-modal");
 const closeInviteModalButton =
     document.querySelector("#close-invite-modal");
 const inviteForm = document.querySelector("#invite-form");
-const inviteEmailInput = document.querySelector("#invite-email");
+const inviteLinkInput = document.querySelector("#invite-link");
 const sendInviteButton = document.querySelector("#send-invite-button");
+const copyInviteLinkButton =
+    document.querySelector("#copy-invite-link-button");
 const inviteMessage = document.querySelector("#invite-message");
 
 
@@ -139,15 +140,25 @@ function openInviteModal() {
     }
 
     inviteForm.reset();
+    inviteLinkInput.value = "";
+    copyInviteLinkButton.disabled = true;
+    sendInviteButton.disabled = false;
+    sendInviteButton.innerHTML = 'Создать ссылку <span>→</span>';
+
     showModalMessage(inviteMessage, "");
     showModal(inviteModal);
-    inviteEmailInput.focus();
+    inviteLinkInput.focus();
 }
 
 
 function closeInviteModal() {
     hideModal(inviteModal);
     inviteForm.reset();
+    inviteLinkInput.value = "";
+    copyInviteLinkButton.disabled = true;
+    sendInviteButton.disabled = false;
+    sendInviteButton.innerHTML = 'Создать ссылку <span>→</span>';
+
     showModalMessage(inviteMessage, "");
 }
 
@@ -358,6 +369,7 @@ async function loadFamily() {
     currentFamily = family;
 
     setHeading(familyTitle, family.name);
+
     familyDescription.textContent =
         "Общие планы, хотелки и приоритеты вашей семьи.";
 
@@ -527,7 +539,7 @@ createTierlistForm.addEventListener("submit", async (event) => {
 
 
 /* =========================================
-   ПРИГЛАШЕНИЯ ПО EMAIL
+   ПРИГЛАШЕНИЯ ПО ССЫЛКЕ
 ========================================= */
 
 async function getInviteErrorMessage(error) {
@@ -544,7 +556,7 @@ async function getInviteErrorMessage(error) {
         }
     }
 
-    return error.message || "Не удалось отправить приглашение.";
+    return error.message || "Не удалось создать ссылку-приглашение.";
 }
 
 
@@ -569,22 +581,14 @@ inviteForm.addEventListener("submit", async (event) => {
         return;
     }
 
-    const email = inviteEmailInput.value.trim().toLowerCase();
-
-    if (!email) {
-        showModalMessage(
-            inviteMessage,
-            "Введи электронную почту.",
-            true
-        );
-        return;
-    }
-
     sendInviteButton.disabled = true;
+    copyInviteLinkButton.disabled = true;
+    sendInviteButton.textContent = "Создаю ссылку...";
+    inviteLinkInput.value = "";
 
     showModalMessage(
         inviteMessage,
-        "Отправляю приглашение..."
+        "Создаю ссылку-приглашение..."
     );
 
     try {
@@ -594,8 +598,7 @@ inviteForm.addEventListener("submit", async (event) => {
                 {
                     body: {
                         action: "create",
-                        familyId,
-                        email
+                        familyId
                     }
                 }
             );
@@ -606,28 +609,99 @@ inviteForm.addEventListener("submit", async (event) => {
             );
         }
 
-        if (!data?.success) {
+        if (!data?.inviteUrl) {
             throw new Error(
-                data?.error || "Не удалось отправить приглашение."
+                data?.error ||
+                "Сервер не вернул ссылку-приглашение."
             );
         }
 
-        showModalMessage(
-            inviteMessage,
-            `Приглашение отправлено на ${email}.`
+        inviteLinkInput.value = data.inviteUrl;
+        copyInviteLinkButton.disabled = false;
+
+        let message =
+            "Ссылка готова! Скопируй её и отправь близкому человеку. ";
+
+        if (data.expiresAt) {
+            const expirationDate = new Date(data.expiresAt);
+
+            if (!Number.isNaN(expirationDate.getTime())) {
+                message +=
+                    `Действует до ${expirationDate.toLocaleString("ru-RU")}.`;
+            } else {
+                message +=
+                    "Ссылка действует 7 дней и используется один раз.";
+            }
+        } else {
+            message +=
+                "Ссылка действует 7 дней и используется один раз.";
+        }
+
+        showModalMessage(inviteMessage, message);
+    } catch (error) {
+        console.error(
+            "Ошибка создания ссылки-приглашения:",
+            error
         );
 
-        inviteForm.reset();
-    } catch (error) {
-        console.error("Ошибка отправки приглашения:", error);
-
         showModalMessage(
             inviteMessage,
-            error.message || "Не удалось отправить приглашение.",
+            error.message ||
+                "Не удалось создать ссылку-приглашение.",
             true
         );
     } finally {
         sendInviteButton.disabled = false;
+        sendInviteButton.innerHTML =
+            'Создать новую ссылку <span>→</span>';
+    }
+});
+
+
+// Копирование готовой ссылки в буфер обмена.
+copyInviteLinkButton.addEventListener("click", async () => {
+    const inviteUrl = inviteLinkInput.value.trim();
+
+    if (!inviteUrl) {
+        showModalMessage(
+            inviteMessage,
+            "Сначала создай ссылку-приглашение.",
+            true
+        );
+        return;
+    }
+
+    try {
+        await navigator.clipboard.writeText(inviteUrl);
+
+        showModalMessage(
+            inviteMessage,
+            "Ссылка скопирована! Теперь отправь её близкому человеку."
+        );
+    } catch (error) {
+        // Запасной способ, если Clipboard API недоступен.
+        inviteLinkInput.focus();
+        inviteLinkInput.select();
+
+        let copied = false;
+
+        try {
+            copied = document.execCommand("copy");
+        } catch {
+            copied = false;
+        }
+
+        if (copied) {
+            showModalMessage(
+                inviteMessage,
+                "Ссылка скопирована! Теперь отправь её близкому человеку."
+            );
+        } else {
+            showModalMessage(
+                inviteMessage,
+                "Не удалось скопировать автоматически. Выдели ссылку и нажми Ctrl+C."
+            );
+        }
     }
 });
 
@@ -805,7 +879,10 @@ async function initialize() {
 
 
 initialize().catch((error) => {
-    console.error("Ошибка инициализации страницы семьи:", error);
+    console.error(
+        "Ошибка инициализации страницы семьи:",
+        error
+    );
 
     showMessage(
         error.message ||

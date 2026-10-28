@@ -74,14 +74,14 @@
                     </span>
                 </div>
 
-                <!-- Приглашение участников -->
+                <!-- Приглашение участников по ссылке -->
                 <button
                     class="secondary-button"
                     id="invite-member-button"
                     type="button"
                     hidden
                 >
-                    ✉ Пригласить участника
+                    ↗ Пригласить по ссылке
                 </button>
 
                 <!-- Удаление всей семьи -->
@@ -249,7 +249,7 @@
 
 
     <!-- ==========================================
-         МОДАЛЬНОЕ ОКНО ПРИГЛАШЕНИЯ ПО EMAIL
+         МОДАЛЬНОЕ ОКНО ПРИГЛАШЕНИЯ ПО ССЫЛКЕ
     =========================================== -->
 
     <div
@@ -282,39 +282,46 @@
             </h2>
 
             <p class="modal-description">
-                Введи электронную почту человека.
-                Мы отправим ему письмо со ссылкой для вступления
-                в эту семью.
+                Создай ссылку-приглашение и отправь её близкому
+                человеку в Telegram, Viber или любым другим способом.
+            </p>
+
+            <p class="invite-form-note">
+                Ссылка действует 7 дней и может быть использована
+                только один раз. Для вступления человеку нужно
+                войти в свой аккаунт или зарегистрироваться.
             </p>
 
             <form id="invite-form">
 
-                <label for="invite-email">
-                    Электронная почта
+                <label for="invite-link">
+                    Ссылка-приглашение
                 </label>
 
                 <input
-                    id="invite-email"
-                    name="email"
-                    type="email"
-                    placeholder="name@example.com"
-                    autocomplete="email"
-                    maxlength="254"
-                    required
+                    id="invite-link"
+                    name="invite-link"
+                    type="text"
+                    placeholder="Ссылка появится после создания"
+                    autocomplete="off"
+                    readonly
                 >
-
-                <p class="invite-form-note">
-                    Ссылка будет действовать 7 дней.
-                    Принять приглашение можно только с аккаунта,
-                    зарегистрированного на указанный email.
-                </p>
 
                 <button
                     class="submit-button"
                     id="send-invite-button"
                     type="submit"
                 >
-                    Отправить приглашение <span>→</span>
+                    Создать ссылку <span>→</span>
+                </button>
+
+                <button
+                    class="secondary-button"
+                    id="copy-invite-link-button"
+                    type="button"
+                    disabled
+                >
+                    Копировать ссылку
                 </button>
 
                 <p
