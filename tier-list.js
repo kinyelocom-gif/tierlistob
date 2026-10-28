@@ -1,12 +1,21 @@
+
 const SUPABASE_URL = "https://ggpebincglevmsgkfyah.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_kybTUuZyvCYrUBCTf3U4uA_nZINdYbH";
 
+const MICROLINK_API = "https://api.microlink.io/";
+
 const params = new URLSearchParams(window.location.search);
+
 const familyId = params.get("familyId");
 const tierListId = params.get("tierListId");
 
 const board = document.querySelector("#tier-board");
 const tierTitle = document.querySelector("#tier-title");
+const tierSubtitle = document.querySelector("#tier-subtitle");
+const exportTitle = document.querySelector("#export-title");
+const exportSubtitle = document.querySelector("#export-subtitle");
+
+const backLink = document.querySelector("#back-link");
 const itemCount = document.querySelector("#item-count");
 const saveStatus = document.querySelector("#save-status");
 
@@ -16,11 +25,13 @@ const exportButton = document.querySelector("#export-button");
 const itemModal = document.querySelector("#item-modal");
 const closeItemModalButton = document.querySelector("#close-item-modal");
 const itemForm = document.querySelector("#item-form");
+
 const itemTitleInput = document.querySelector("#item-title");
 const itemDescriptionInput = document.querySelector("#item-description");
 const itemEmojiInput = document.querySelector("#item-emoji");
 const purchaseUrlInput = document.querySelector("#item-purchase-url");
 const itemRankInput = document.querySelector("#item-rank");
+
 const saveItemButton = document.querySelector("#save-item-button");
 const itemFormMessage = document.querySelector("#item-form-message");
 
@@ -32,232 +43,95 @@ const linkPreviewStatus = document.querySelector("#link-preview-status");
 
 const detailsModal = document.querySelector("#details-modal");
 const closeDetailsModalButton = document.querySelector("#close-details-modal");
+
 const detailsTitle = document.querySelector("#details-title");
 const detailsDescription = document.querySelector("#details-description");
 const detailsImage = document.querySelector("#details-image");
 const detailsEmoji = document.querySelector("#details-emoji");
 const detailsPurchaseLink = document.querySelector("#details-purchase-link");
 const detailsRank = document.querySelector("#details-rank");
+
 const purchaseButton = document.querySelector("#purchase-button");
 const deleteButton = document.querySelector("#delete-button");
 const detailsMessage = document.querySelector("#details-message");
 
 const activityList = document.querySelector("#activity-list");
 
-const MICROLINK_API = "https://api.microlink.io/";
-
 let supabaseClient = null;
 let currentUser = null;
 let currentFamily = null;
 let currentTierList = null;
-let state = { items: [], activity: [] };
+
+let state = {
+    items: [],
+    activity: []
+};
+
 let selectedItemId = null;
 let draggedItemId = null;
+let previewRequestNumber = 0;
 
 let previewState = {
     url: null,
     imageUrl: null,
     title: null,
-    checked: false,
-    error: null
+    checked: false
 };
+
+
+/* =====================================================
+   ОБЩИЕ ФУНКЦИИ
+===================================================== */
 
 function el(tag, className = "", text = "") {
     const node = document.createElement(tag);
 
-    if (className) node.className = className;
-    if (text) node.textContent = text;
+    if (className) {
+        node.className = className;
+    }
+
+    if (text !== undefined && text !== null) {
+        node.textContent = text;
+    }
 
     return node;
 }
+
 
 function showStatus(text, isError = false) {
     saveStatus.textContent = text;
     saveStatus.classList.toggle("status-error", isError);
 }
 
+
 function showFormMessage(element, text, isError = false) {
     element.textContent = text;
     element.classList.toggle("error", isError);
 }
 
-function normalizePurchaseUrl(value) {
-    if (!value.trim()) return null;
 
-    let url;
-
-    try {
-        url = new URL(value.trim());
-    } catch {
-        throw new Error("Введи корректную ссылку на товар.");
-    }
-
-    if (url.protocol !== "https:") {
-        throw new Error("Ссылка на покупку должна начинаться с https://");
-    }
-
-    if (
-        !url.hostname ||
-        url.hostname === "localhost" ||
-        url.hostname.endsWith(".local") ||
-        url.username ||
-        url.password
-    ) {
-        throw new Error("Проверь адрес сайта покупки.");
-    }
-
-    return url.href;
+function createId() {
+    return crypto.randomUUID();
 }
 
-function createImageProxyUrl(productUrl) {
-    const url = new URL(MICROLINK_API);
 
-    url.searchParams.set("url", productUrl);
-    url.searchParams.set("meta", "false");
-    url.searchParams.set("embed", "image.url");
-
-    return url.toString();
-}
-
-function resetPreview() {
-    previewState = {
-        url: null,
-        imageUrl: null,
-        title: null,
-        checked: false,
-        error: null
-    };
-
-    linkPreview.hidden = true;
-    linkPreviewImage.hidden = true;
-    linkPreviewImage.removeAttribute("src");
-
-    linkPreviewTitle.textContent = "Превью товара";
-    linkPreviewStatus.textContent = "";
-    linkPreviewEmoji.textContent = itemEmoji();
-}
-
-function itemEmoji() {
+function getEmoji() {
     return itemEmojiInput.value.trim() || "🛍️";
 }
 
-async function fetchLinkPreview(rawUrl) {
-    const productUrl = normalizePurchaseUrl(rawUrl);
 
-    if (!productUrl) {
-        resetPreview();
-        return null;
-    }
-
-    if (previewState.url === productUrl && previewState.checked) {
-        return previewState;
-    }
-
-    linkPreview.hidden = false;
-    linkPreviewImage.hidden = true;
-    linkPreviewImage.removeAttribute("src");
-    linkPreviewEmoji.textContent = itemEmoji();
-    linkPreviewTitle.textContent = "Получаю превью...";
-    linkPreviewStatus.textContent = "Проверяю страницу магазина";
-
-    previewState = {
-        url: productUrl,
-        imageUrl: null,
-        title: null,
-        checked: false,
-        error: null
-    };
-
-    const apiUrl = new URL(MICROLINK_API);
-    apiUrl.searchParams.set("url", productUrl);
-
-    try {
-        const response = await fetch(apiUrl);
-
-        if (!response.ok) {
-            throw new Error(`Сервис превью ответил: HTTP ${response.status}`);
-        }
-
-        const result = await response.json();
-
-        if (result.status !== "success" || !result.data) {
-            throw new Error("Сервис не смог получить превью этой страницы.");
-        }
-
-        const data = result.data;
-        const imageUrl = data.image?.url
-            ? createImageProxyUrl(productUrl)
-            : null;
-
-        previewState = {
-            url: productUrl,
-            imageUrl,
-            title: data.title || null,
-            checked: true,
-            error: null
-        };
-
-        linkPreviewTitle.textContent =
-            data.title || "Превью товара";
-
-        linkPreviewEmoji.textContent = itemEmoji();
-
-        if (imageUrl) {
-            linkPreviewImage.crossOrigin = "anonymous";
-            linkPreviewImage.alt = data.title || "Превью товара";
-
-            linkPreviewImage.onload = () => {
-                linkPreviewImage.hidden = false;
-                linkPreviewEmoji.hidden = true;
-            };
-
-            linkPreviewImage.onerror = () => {
-                linkPreviewImage.hidden = true;
-                linkPreviewEmoji.hidden = false;
-                linkPreviewStatus.textContent =
-                    "Изображение не открылось. Сохраним эмодзи.";
-            };
-
-            linkPreviewImage.src = imageUrl;
-            linkPreviewStatus.textContent =
-                "Изображение найдено. Оно появится на карточке.";
-        } else {
-            linkPreviewEmoji.hidden = false;
-            linkPreviewStatus.textContent =
-                "У сайта нет доступного превью. Будет отображаться эмодзи.";
-        }
-
-        return previewState;
-    } catch (error) {
-        console.error("Ошибка получения превью:", error);
-
-        previewState = {
-            url: productUrl,
-            imageUrl: null,
-            title: null,
-            checked: true,
-            error: error.message
-        };
-
-        linkPreviewImage.hidden = true;
-        linkPreviewEmoji.hidden = false;
-        linkPreviewTitle.textContent = "Не удалось получить превью";
-        linkPreviewStatus.textContent =
-            "Ссылка сохранится, а вместо изображения будет эмодзи.";
-
-        return previewState;
-    }
-}
-
-function rankName(rank) {
-    return {
+function getRankName(rank) {
+    const names = {
         S: "S — максимальный приоритет",
         A: "A — очень важно",
         B: "B — средний приоритет",
         C: "C — можно подождать",
         D: "D — низкий приоритет"
-    }[rank] || rank;
+    };
+
+    return names[rank] || rank;
 }
+
 
 function formatDate(value) {
     return new Date(value).toLocaleString("ru-RU", {
@@ -267,6 +141,7 @@ function formatDate(value) {
         minute: "2-digit"
     });
 }
+
 
 function pluralizeItems(count) {
     const lastTwo = count % 100;
@@ -282,15 +157,252 @@ function pluralizeItems(count) {
     return `${count} ${word}`;
 }
 
+
+function normalizePurchaseUrl(value) {
+    if (!value.trim()) {
+        return null;
+    }
+
+    let url;
+
+    try {
+        url = new URL(value.trim());
+    } catch {
+        throw new Error("Введи корректную ссылку на товар.");
+    }
+
+    if (url.protocol !== "https:") {
+        throw new Error("Ссылка должна начинаться с https://");
+    }
+
+    if (
+        !url.hostname ||
+        url.hostname === "localhost" ||
+        url.hostname.endsWith(".local") ||
+        url.username ||
+        url.password
+    ) {
+        throw new Error("Проверь адрес сайта покупки.");
+    }
+
+    return url.href;
+}
+
+
+/* =====================================================
+   ПРЕВЬЮ САЙТА ПОКУПКИ
+===================================================== */
+
+// Microlink возвращает прямую картинку через embed.
+// Это помогает, когда магазин запрещает hotlink на свой CDN.
+
+function createImageProxyUrl(productUrl) {
+    const url = new URL(MICROLINK_API);
+
+    url.searchParams.set("url", productUrl);
+    url.searchParams.set("embed", "image.url");
+
+    return url.toString();
+}
+
+
+// Запасной вариант — скриншот страницы товара.
+
+function createScreenshotUrl(productUrl) {
+    const url = new URL(MICROLINK_API);
+
+    url.searchParams.set("url", productUrl);
+    url.searchParams.set("screenshot", "true");
+    url.searchParams.set("meta", "false");
+    url.searchParams.set("embed", "screenshot.url");
+
+    return url.toString();
+}
+
+
+function resetPreview() {
+    previewRequestNumber++;
+
+    previewState = {
+        url: null,
+        imageUrl: null,
+        title: null,
+        checked: false
+    };
+
+    linkPreview.hidden = true;
+
+    linkPreviewImage.hidden = true;
+    linkPreviewImage.removeAttribute("src");
+
+    linkPreviewEmoji.hidden = false;
+    linkPreviewEmoji.textContent = getEmoji();
+
+    linkPreviewTitle.textContent = "Превью товара";
+    linkPreviewStatus.textContent = "Ожидаю ссылку...";
+}
+
+
+function setPreviewImage(imageUrl, emoji, requestNumber) {
+    linkPreviewImage.onload = () => {
+        if (requestNumber !== previewRequestNumber) {
+            return;
+        }
+
+        linkPreviewImage.hidden = false;
+        linkPreviewEmoji.hidden = true;
+
+        linkPreviewStatus.textContent = "Изображение найдено.";
+    };
+
+    linkPreviewImage.onerror = () => {
+        if (requestNumber !== previewRequestNumber) {
+            return;
+        }
+
+        linkPreviewImage.hidden = true;
+        linkPreviewEmoji.hidden = false;
+        linkPreviewEmoji.textContent = emoji;
+
+        linkPreviewStatus.textContent =
+            "Превью недоступно — используем эмодзи.";
+    };
+
+    linkPreviewImage.crossOrigin = "anonymous";
+    linkPreviewImage.alt = "Превью товара";
+    linkPreviewImage.hidden = true;
+    linkPreviewEmoji.hidden = false;
+    linkPreviewEmoji.textContent = emoji;
+
+    // Сначала назначаем обработчики, затем src.
+    linkPreviewImage.src = imageUrl;
+}
+
+
+async function fetchLinkPreview(rawUrl) {
+    const productUrl = normalizePurchaseUrl(rawUrl);
+
+    if (!productUrl) {
+        resetPreview();
+        return null;
+    }
+
+    if (
+        previewState.url === productUrl &&
+        previewState.checked
+    ) {
+        return previewState;
+    }
+
+    const requestNumber = ++previewRequestNumber;
+    const emoji = getEmoji();
+
+    previewState = {
+        url: productUrl,
+        imageUrl: null,
+        title: null,
+        checked: false
+    };
+
+    linkPreview.hidden = false;
+    linkPreviewImage.hidden = true;
+    linkPreviewImage.removeAttribute("src");
+    linkPreviewEmoji.hidden = false;
+    linkPreviewEmoji.textContent = emoji;
+
+    linkPreviewTitle.textContent = "Получаю превью...";
+    linkPreviewStatus.textContent =
+        "Анализирую страницу магазина. Это может занять время.";
+
+    let imageUrl = null;
+    let title = null;
+
+    try {
+        const metadataUrl = new URL(MICROLINK_API);
+        metadataUrl.searchParams.set("url", productUrl);
+
+        const response = await fetch(metadataUrl.toString());
+
+        if (!response.ok) {
+            throw new Error(`Microlink: HTTP ${response.status}`);
+        }
+
+        const result = await response.json();
+
+        if (result.status !== "success" || !result.data) {
+            throw new Error(
+                result.message || "Не удалось прочитать метаданные товара."
+            );
+        }
+
+        title = result.data.title || null;
+
+        // Если у страницы есть Open Graph image, используем прокси.
+        // Иначе попробуем скриншот страницы.
+        if (result.data.image && result.data.image.url) {
+            imageUrl = createImageProxyUrl(productUrl);
+        } else {
+            imageUrl = createScreenshotUrl(productUrl);
+        }
+    } catch (error) {
+        console.warn(
+            "Не удалось получить метаданные. Пробуем скриншот:",
+            error
+        );
+
+        // Даже если метаданные недоступны, оставляем попытку
+        // создать превью скриншотом.
+        imageUrl = createScreenshotUrl(productUrl);
+    }
+
+    if (requestNumber !== previewRequestNumber) {
+        return null;
+    }
+
+    previewState = {
+        url: productUrl,
+        imageUrl,
+        title,
+        checked: true
+    };
+
+    linkPreviewTitle.textContent =
+        title || new URL(productUrl).hostname;
+
+    linkPreviewStatus.textContent =
+        "Загружаю изображение превью...";
+
+    setPreviewImage(imageUrl, emoji, requestNumber);
+
+    return previewState;
+}
+
+
+/* =====================================================
+   ЗАГРУЗКА ДАННЫХ ИЗ SUPABASE
+===================================================== */
+
 async function loadData() {
     showStatus("Синхронизирую с облаком...");
 
     const [itemsResult, activityResult] = await Promise.all([
         supabaseClient
             .from("wishlist_items")
-            .select(
-                "id, tier_list_id, title, description, emoji, purchase_url, preview_image_url, rank, position, created_by, created_at, updated_at, purchased"
-            )
+            .select(`
+                id,
+                tier_list_id,
+                title,
+                description,
+                emoji,
+                purchase_url,
+                preview_image_url,
+                rank,
+                position,
+                created_by,
+                created_at,
+                updated_at,
+                purchased
+            `)
             .eq("tier_list_id", tierListId)
             .eq("purchased", false)
             .order("position", { ascending: true })
@@ -298,16 +410,27 @@ async function loadData() {
 
         supabaseClient
             .from("tier_list_activity")
-            .select(
-                "id, item_title, action_type, actor_name, details, created_at"
-            )
+            .select(`
+                id,
+                item_title,
+                item_description,
+                action_type,
+                actor_name,
+                details,
+                created_at
+            `)
             .eq("tier_list_id", tierListId)
             .order("created_at", { ascending: false })
             .limit(30)
     ]);
 
-    if (itemsResult.error) throw itemsResult.error;
-    if (activityResult.error) throw activityResult.error;
+    if (itemsResult.error) {
+        throw itemsResult.error;
+    }
+
+    if (activityResult.error) {
+        throw activityResult.error;
+    }
 
     state.items = itemsResult.data || [];
     state.activity = activityResult.data || [];
@@ -318,26 +441,42 @@ async function loadData() {
     showStatus("Все изменения сохранены в облаке.");
 }
 
+
+/* =====================================================
+   ОТРИСОВКА ТИР-ЛИСТА
+===================================================== */
+
 function renderBoard() {
     document.querySelectorAll(".tier-items").forEach((zone) => {
         zone.replaceChildren();
 
         const rank = zone.dataset.rank;
-        const items = state.items.filter((item) => item.rank === rank);
+
+        const items = state.items.filter(
+            (item) => item.rank === rank
+        );
 
         if (items.length === 0) {
             zone.append(
-                el("span", "tier-empty-hint", "Перетащите хотелку сюда")
+                el(
+                    "span",
+                    "tier-empty-hint",
+                    "Перетащите хотелку сюда"
+                )
             );
         }
 
         items.forEach((item) => {
             const card = el("div", "tier-item");
+
             card.dataset.id = item.id;
             card.draggable = true;
             card.tabIndex = 0;
             card.setAttribute("role", "button");
-            card.setAttribute("aria-label", `${item.title}. Подробности`);
+            card.setAttribute(
+                "aria-label",
+                `${item.title}. Открыть подробности`
+            );
 
             let wasDragged = false;
 
@@ -345,24 +484,22 @@ function renderBoard() {
             const image = el("img");
             const emoji = el(
                 "span",
-                item.preview_image_url
-                    ? "tier-item-emoji has-image"
-                    : "tier-item-emoji",
+                "tier-item-emoji",
                 item.emoji || "🛍️"
             );
 
             image.alt = item.title;
             image.crossOrigin = "anonymous";
-            image.hidden = !item.preview_image_url;
-
-            image.onerror = () => {
-                image.hidden = true;
-                emoji.classList.remove("has-image");
-            };
+            image.hidden = true;
 
             image.onload = () => {
                 image.hidden = false;
                 emoji.classList.add("has-image");
+            };
+
+            image.onerror = () => {
+                image.hidden = true;
+                emoji.classList.remove("has-image");
             };
 
             media.append(image, emoji);
@@ -372,7 +509,13 @@ function renderBoard() {
             }
 
             const info = el("div", "tier-item-info");
-            const title = el("strong", "tier-item-title", item.title);
+
+            const title = el(
+                "strong",
+                "tier-item-title",
+                item.title
+            );
+
             const description = el(
                 "span",
                 "tier-item-description",
@@ -383,7 +526,9 @@ function renderBoard() {
             card.append(media, info);
 
             card.addEventListener("click", () => {
-                if (!wasDragged) openDetails(item.id);
+                if (!wasDragged) {
+                    openDetails(item.id);
+                }
             });
 
             card.addEventListener("keydown", (event) => {
@@ -398,6 +543,7 @@ function renderBoard() {
                 draggedItemId = item.id;
 
                 card.classList.add("is-dragging");
+
                 event.dataTransfer.effectAllowed = "move";
                 event.dataTransfer.setData("text/plain", item.id);
             });
@@ -422,13 +568,23 @@ function renderBoard() {
     itemCount.textContent = pluralizeItems(state.items.length);
 }
 
+
+/* =====================================================
+   ИСТОРИЯ
+===================================================== */
+
 function renderActivity() {
     activityList.replaceChildren();
 
     if (state.activity.length === 0) {
         activityList.append(
-            el("p", "empty-activity", "Здесь появятся ваши действия.")
+            el(
+                "p",
+                "empty-activity",
+                "Здесь появятся ваши действия."
+            )
         );
+
         return;
     }
 
@@ -440,19 +596,20 @@ function renderActivity() {
         const time = el("time", "activity-time");
 
         const details = entry.details || {};
-        const itemTitle = `«${entry.item_title}»`;
+        const title = `«${entry.item_title}»`;
 
         const messages = {
-            added: `добавил(а) ${itemTitle} в ранг ${details.rank || ""}`,
-            moved: `переместил(а) ${itemTitle}: ${details.from_rank || "?"} → ${details.to_rank || "?"}`,
-            updated: `изменил(а) ${itemTitle}`,
-            purchased: `отметил(а) ${itemTitle} купленной`,
-            reopened: `вернул(а) ${itemTitle} в список`,
-            deleted: `удалил(а) ${itemTitle}`
+            added: `добавил(а) ${title} в ранг ${details.rank || ""}`,
+            moved: `переместил(а) ${title}: ${details.from_rank || "?"} → ${details.to_rank || "?"}`,
+            updated: `изменил(а) ${title}`,
+            purchased: `отметил(а) ${title} купленной`,
+            reopened: `вернул(а) ${title} в список`,
+            deleted: `удалил(а) ${title}`
         };
 
         text.textContent =
-            `${entry.actor_name || "Участник"} ${messages[entry.action_type] || `изменил(а) ${itemTitle}`}.`;
+            `${entry.actor_name || "Участник"} ` +
+            `${messages[entry.action_type] || `изменил(а) ${title}`}.`;
 
         time.dateTime = entry.created_at;
         time.textContent = formatDate(entry.created_at);
@@ -463,17 +620,24 @@ function renderActivity() {
     });
 }
 
+
+/* =====================================================
+   ОКНО ДОБАВЛЕНИЯ ХОТЕЛКИ
+===================================================== */
+
 function openItemModal() {
     itemForm.reset();
     itemRankInput.value = "B";
     itemEmojiInput.value = "🛍️";
 
-    showFormMessage(itemFormMessage, "");
     resetPreview();
+
+    showFormMessage(itemFormMessage, "");
 
     itemModal.hidden = false;
     itemTitleInput.focus();
 }
+
 
 function closeItemModal() {
     itemModal.hidden = true;
@@ -481,24 +645,146 @@ function closeItemModal() {
     resetPreview();
 }
 
+
+addItemButton.addEventListener("click", openItemModal);
+
+closeItemModalButton.addEventListener("click", closeItemModal);
+
+itemModal.addEventListener("click", (event) => {
+    if (event.target === itemModal) {
+        closeItemModal();
+    }
+});
+
+itemEmojiInput.addEventListener("input", () => {
+    linkPreviewEmoji.textContent = getEmoji();
+});
+
+purchaseUrlInput.addEventListener("change", async () => {
+    const value = purchaseUrlInput.value.trim();
+
+    if (!value) {
+        resetPreview();
+        return;
+    }
+
+    try {
+        await fetchLinkPreview(value);
+        showFormMessage(itemFormMessage, "");
+    } catch (error) {
+        showFormMessage(itemFormMessage, error.message, true);
+    }
+});
+
+
+itemForm.addEventListener("submit", async (event) => {
+    event.preventDefault();
+
+    const title = itemTitleInput.value.trim();
+    const description = itemDescriptionInput.value.trim();
+    const emoji = getEmoji();
+    const rank = itemRankInput.value;
+
+    let purchaseUrl;
+
+    try {
+        purchaseUrl = normalizePurchaseUrl(purchaseUrlInput.value);
+    } catch (error) {
+        showFormMessage(itemFormMessage, error.message, true);
+        return;
+    }
+
+    saveItemButton.disabled = true;
+
+    showFormMessage(
+        itemFormMessage,
+        purchaseUrl
+            ? "Проверяю ссылку и сохраняю хотелку..."
+            : "Сохраняю хотелку..."
+    );
+
+    try {
+        let previewImageUrl = null;
+
+        if (purchaseUrl) {
+            const preview = await fetchLinkPreview(purchaseUrl);
+            previewImageUrl = preview?.imageUrl || null;
+        }
+
+        const rankItems = state.items.filter(
+            (item) => item.rank === rank
+        );
+
+        const position = rankItems.length
+            ? Math.max(...rankItems.map((item) => item.position || 0)) + 1
+            : 0;
+
+        const { data, error } = await supabaseClient
+            .from("wishlist_items")
+            .insert({
+                tier_list_id: tierListId,
+                title,
+                description,
+                emoji,
+                purchase_url: purchaseUrl,
+                preview_image_url: previewImageUrl,
+                rank,
+                position
+            })
+            .select("id")
+            .single();
+
+        if (error) {
+            throw error;
+        }
+
+        closeItemModal();
+
+        await loadData();
+
+        showStatus("Хотелка сохранена.");
+    } catch (error) {
+        console.error("Ошибка добавления хотелки:", error);
+
+        showFormMessage(
+            itemFormMessage,
+            error.message || "Не удалось сохранить хотелку.",
+            true
+        );
+    } finally {
+        saveItemButton.disabled = false;
+    }
+});
+
+
+/* =====================================================
+   ПОДРОБНОСТИ ХОТЕЛКИ
+===================================================== */
+
 async function openDetails(id) {
     const item = state.items.find((entry) => entry.id === id);
 
-    if (!item) return;
+    if (!item) {
+        return;
+    }
 
     selectedItemId = id;
 
     detailsTitle.textContent = item.title;
+
     detailsDescription.textContent =
         item.description || "Описание не добавлено.";
-    detailsRank.textContent = rankName(item.rank);
+
+    detailsRank.textContent = getRankName(item.rank);
 
     detailsEmoji.textContent = item.emoji || "🛍️";
-    detailsEmoji.hidden = Boolean(item.preview_image_url);
+    detailsEmoji.hidden = false;
 
     detailsImage.hidden = true;
     detailsImage.removeAttribute("src");
+
     detailsMessage.textContent = "";
+    detailsMessage.classList.remove("error");
 
     detailsPurchaseLink.hidden = !item.purchase_url;
 
@@ -515,12 +801,19 @@ async function openDetails(id) {
         detailsImage.alt = item.title;
 
         detailsImage.onload = () => {
-            if (selectedItemId !== id) return;
+            if (selectedItemId !== id) {
+                return;
+            }
+
             detailsImage.hidden = false;
             detailsEmoji.hidden = true;
         };
 
         detailsImage.onerror = () => {
+            if (selectedItemId !== id) {
+                return;
+            }
+
             detailsImage.hidden = true;
             detailsEmoji.hidden = false;
         };
@@ -529,14 +822,30 @@ async function openDetails(id) {
     }
 }
 
+
 function closeDetailsModal() {
     detailsModal.hidden = true;
     selectedItemId = null;
 }
 
+
+closeDetailsModalButton.addEventListener("click", closeDetailsModal);
+
+detailsModal.addEventListener("click", (event) => {
+    if (event.target === detailsModal) {
+        closeDetailsModal();
+    }
+});
+
+
+/* =====================================================
+   ПЕРЕТАСКИВАНИЕ
+===================================================== */
+
 document.querySelectorAll(".tier-items").forEach((zone) => {
     zone.addEventListener("dragover", (event) => {
         event.preventDefault();
+
         zone.classList.add("drag-over");
         event.dataTransfer.dropEffect = "move";
     });
@@ -551,13 +860,17 @@ document.querySelectorAll(".tier-items").forEach((zone) => {
         event.preventDefault();
         zone.classList.remove("drag-over");
 
-        const id = event.dataTransfer.getData("text/plain") || draggedItemId;
+        const id =
+            event.dataTransfer.getData("text/plain") ||
+            draggedItemId;
+
         const item = state.items.find((entry) => entry.id === id);
         const targetRank = zone.dataset.rank;
 
-        if (!item || item.rank === targetRank) return;
+        if (!item || item.rank === targetRank) {
+            return;
+        }
 
-        const sourceRank = item.rank;
         const targetItems = state.items.filter(
             (entry) => entry.rank === targetRank
         );
@@ -568,14 +881,28 @@ document.querySelectorAll(".tier-items").forEach((zone) => {
 
         showStatus("Сохраняю новый ранг...");
 
-        const { error } = await supabaseClient
+        const { data, error } = await supabaseClient
             .from("wishlist_items")
-            .update({ rank: targetRank, position })
+            .update({
+                rank: targetRank,
+                position
+            })
             .eq("id", id)
-            .eq("tier_list_id", tierListId);
+            .eq("tier_list_id", tierListId)
+            .select("id")
+            .maybeSingle();
 
         if (error) {
+            console.error("Ошибка перемещения:", error);
             showStatus(error.message, true);
+            return;
+        }
+
+        if (!data) {
+            showStatus(
+                "Изменение не сохранено: проверь права доступа к хотелке.",
+                true
+            );
             return;
         }
 
@@ -583,135 +910,67 @@ document.querySelectorAll(".tier-items").forEach((zone) => {
     });
 });
 
-addItemButton.addEventListener("click", openItemModal);
-closeItemModalButton.addEventListener("click", closeItemModal);
 
-itemModal.addEventListener("click", (event) => {
-    if (event.target === itemModal) closeItemModal();
-});
-
-itemEmojiInput.addEventListener("input", () => {
-    linkPreviewEmoji.textContent = itemEmoji();
-});
-
-purchaseUrlInput.addEventListener("change", async () => {
-    const value = purchaseUrlInput.value.trim();
-
-    if (!value) {
-        resetPreview();
-        return;
-    }
-
-    try {
-        await fetchLinkPreview(value);
-    } catch (error) {
-        showFormMessage(itemFormMessage, error.message, true);
-    }
-});
-
-itemForm.addEventListener("submit", async (event) => {
-    event.preventDefault();
-
-    const title = itemTitleInput.value.trim();
-    const description = itemDescriptionInput.value.trim();
-    const emoji = itemEmoji();
-    const rank = itemRankInput.value;
-
-    let purchaseUrl = null;
-
-    try {
-        purchaseUrl = normalizePurchaseUrl(purchaseUrlInput.value);
-    } catch (error) {
-        showFormMessage(itemFormMessage, error.message, true);
-        return;
-    }
-
-    saveItemButton.disabled = true;
-
-    let previewImageUrl = null;
-
-    if (purchaseUrl) {
-        const preview = await fetchLinkPreview(purchaseUrl).catch((error) => {
-            console.error(error);
-            return null;
-        });
-
-        previewImageUrl = preview?.imageUrl || null;
-    }
-
-    showFormMessage(
-        itemFormMessage,
-        "Сохраняю хотелку..."
-    );
-
-    try {
-        const rankItems = state.items.filter((item) => item.rank === rank);
-        const position = rankItems.length
-            ? Math.max(...rankItems.map((item) => item.position || 0)) + 1
-            : 0;
-
-        const { error } = await supabaseClient
-            .from("wishlist_items")
-            .insert({
-                tier_list_id: tierListId,
-                title,
-                description,
-                emoji,
-                purchase_url: purchaseUrl,
-                preview_image_url: previewImageUrl,
-                rank,
-                position
-            });
-
-        if (error) throw error;
-
-        closeItemModal();
-        await loadData();
-    } catch (error) {
-        console.error("Ошибка добавления хотелки:", error);
-
-        showFormMessage(
-            itemFormMessage,
-            error.message || "Не удалось сохранить хотелку.",
-            true
-        );
-    } finally {
-        saveItemButton.disabled = false;
-    }
-});
-
-closeDetailsModalButton.addEventListener("click", closeDetailsModal);
-
-detailsModal.addEventListener("click", (event) => {
-    if (event.target === detailsModal) closeDetailsModal();
-});
+/* =====================================================
+   ОТМЕТКА О ПОКУПКЕ
+===================================================== */
 
 purchaseButton.addEventListener("click", async () => {
-    const item = state.items.find((entry) => entry.id === selectedItemId);
+    const item = state.items.find(
+        (entry) => entry.id === selectedItemId
+    );
 
-    if (!item) return;
+    if (!item) {
+        showFormMessage(
+            detailsMessage,
+            "Хотелка не найдена. Закрой окно и открой её заново.",
+            true
+        );
+        return;
+    }
 
     purchaseButton.disabled = true;
+
     showFormMessage(detailsMessage, "Сохраняю покупку...");
 
     try {
-        const { error } = await supabaseClient
+        const { data, error } = await supabaseClient
             .from("wishlist_items")
             .update({ purchased: true })
             .eq("id", item.id)
-            .eq("tier_list_id", tierListId);
+            .eq("tier_list_id", tierListId)
+            .select("id")
+            .maybeSingle();
 
-        if (error) throw error;
+        if (error) {
+            throw error;
+        }
+
+        if (!data) {
+            throw new Error("База не подтвердила обновление записи.");
+        }
 
         closeDetailsModal();
         await loadData();
+
+        showStatus(`«${item.title}» отмечена купленной.`);
     } catch (error) {
-        showFormMessage(detailsMessage, error.message, true);
+        console.error("Ошибка отметки о покупке:", error);
+
+        showFormMessage(
+            detailsMessage,
+            error.message || "Не удалось сохранить покупку.",
+            true
+        );
     } finally {
         purchaseButton.disabled = false;
     }
 });
 
+
+/* =====================================================
+   УДАЛЕНИЕ ХОТЕЛКИ
+===================================================== */
 
 deleteButton.addEventListener("click", async () => {
     const item = state.items.find(
@@ -732,6 +991,7 @@ deleteButton.addEventListener("click", async () => {
     }
 
     deleteButton.disabled = true;
+
     showFormMessage(detailsMessage, "Удаляю хотелку...");
 
     try {
@@ -740,16 +1000,17 @@ deleteButton.addEventListener("click", async () => {
             .delete()
             .eq("id", item.id)
             .eq("tier_list_id", tierListId)
-            .select("id");
+            .select("id")
+            .maybeSingle();
 
         if (error) {
             throw error;
         }
 
-        // Supabase мог не удалить ничего из-за RLS.
-        if (!data || data.length === 0) {
+        if (!data) {
             throw new Error(
-                "Запись не удалена. Проверь права DELETE и SELECT в Supabase."
+                "База не подтвердила удаление. " +
+                "Проверь права DELETE и SELECT в Supabase."
             );
         }
 
@@ -773,6 +1034,10 @@ deleteButton.addEventListener("click", async () => {
 });
 
 
+/* =====================================================
+   ЭКСПОРТ PNG
+===================================================== */
+
 exportButton.addEventListener("click", async () => {
     if (!window.htmlToImage) {
         showStatus("Не загрузилась библиотека экспорта PNG.", true);
@@ -783,9 +1048,9 @@ exportButton.addEventListener("click", async () => {
     exportButton.textContent = "Готовлю изображение...";
 
     try {
-        const images = [...board.querySelectorAll("img")].filter(
-            (image) => !image.hidden
-        );
+        const images = [
+            ...board.querySelectorAll("img:not([hidden])")
+        ];
 
         await Promise.all(
             images.map((image) =>
@@ -810,8 +1075,9 @@ exportButton.addEventListener("click", async () => {
         showStatus("Тир-лист экспортирован в PNG.");
     } catch (error) {
         console.error("Ошибка экспорта:", error);
+
         showStatus(
-            "Не удалось создать PNG. Попробуй ещё раз.",
+            "Не удалось создать PNG. Возможно, изображение заблокировано внешним сайтом.",
             true
         );
     } finally {
@@ -820,6 +1086,11 @@ exportButton.addEventListener("click", async () => {
     }
 });
 
+
+/* =====================================================
+   ЗАКРЫТИЕ ОКОН
+===================================================== */
+
 document.addEventListener("keydown", (event) => {
     if (event.key === "Escape") {
         closeItemModal();
@@ -827,33 +1098,29 @@ document.addEventListener("keydown", (event) => {
     }
 });
 
-function addExportTitle() {
-    if (board.querySelector(".tier-board-title")) return;
 
-    const titleBlock = el("div", "tier-board-title");
-
-    titleBlock.append(
-        el("span", "tier-board-brand", "НХ."),
-        el("h2", "", currentTierList.name),
-        el("p", "", currentFamily.name.toUpperCase())
-    );
-
-    board.prepend(titleBlock);
-}
+/* =====================================================
+   ЗАПУСК
+===================================================== */
 
 async function initialize() {
+    if (!window.supabase) {
+        showStatus("Не удалось загрузить библиотеку Supabase.", true);
+        return;
+    }
+
     if (
-        !window.supabase ||
         !SUPABASE_URL.startsWith("https://") ||
         SUPABASE_URL.includes("ВСТАВЬ") ||
+        !SUPABASE_PUBLISHABLE_KEY ||
         SUPABASE_PUBLISHABLE_KEY.includes("ВСТАВЬ")
     ) {
-        showStatus("Проверь URL и Publishable key в tier-list.js.", true);
+        showStatus("Укажи Project URL и Publishable key в tier-list.js.", true);
         return;
     }
 
     if (!familyId || !tierListId) {
-        window.location.replace("families.html");
+        window.location.replace("famswitcher.html");
         return;
     }
 
@@ -865,7 +1132,9 @@ async function initialize() {
     const { data: sessionData, error: sessionError } =
         await supabaseClient.auth.getSession();
 
-    if (sessionError) throw sessionError;
+    if (sessionError) {
+        throw sessionError;
+    }
 
     if (!sessionData.session) {
         window.location.replace("index.html");
@@ -882,6 +1151,8 @@ async function initialize() {
 
     currentUser = userData.user;
 
+    // Проверяем, что тир-лист действительно принадлежит
+    // семье, которая указана в адресе.
     const { data: list, error: listError } = await supabaseClient
         .from("tier_lists")
         .select("id, family_id, name")
@@ -889,7 +1160,9 @@ async function initialize() {
         .eq("family_id", familyId)
         .single();
 
-    if (listError) throw listError;
+    if (listError) {
+        throw listError;
+    }
 
     const { data: family, error: familyError } = await supabaseClient
         .from("families")
@@ -897,7 +1170,9 @@ async function initialize() {
         .eq("id", familyId)
         .single();
 
-    if (familyError) throw familyError;
+    if (familyError) {
+        throw familyError;
+    }
 
     currentTierList = list;
     currentFamily = family;
@@ -905,19 +1180,20 @@ async function initialize() {
     tierTitle.textContent = `${list.name}.`;
     document.title = `${list.name} — ${family.name}`;
 
-    const backLink = document.querySelector(".back-link");
+    tierSubtitle.textContent =
+        `${family.name} · Общие планы и приоритеты`;
 
-    if (backLink) {
-        backLink.href =
-            `family.html?familyId=${encodeURIComponent(familyId)}`;
+    exportTitle.textContent = list.name;
+    exportSubtitle.textContent = family.name.toUpperCase();
 
-        backLink.textContent = "← К тир-листам семьи";
-    }
+    backLink.href =
+        `family.html?familyId=${encodeURIComponent(familyId)}`;
 
-    addExportTitle();
     await loadData();
 }
 
+
+// Сбрасываем превью перед использованием формы.
 resetPreview();
 
 initialize().catch((error) => {

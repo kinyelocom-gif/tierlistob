@@ -13,32 +13,47 @@
     <script src="https://cdn.jsdelivr.net/npm/html-to-image@1.11.11/dist/html-to-image.min.js"></script>
     <script src="tier-list.js" defer></script>
 </head>
+
 <body class="tier-page">
+
     <header class="site-header">
         <a class="logo" href="families.html">НХ<span>.</span></a>
 
-        <a class="back-link" href="families.html">
-            <span>←</span> К семьям
+        <a class="back-link" id="back-link" href="families.html">
+            ← К тир-листам семьи
         </a>
     </header>
 
     <main class="tier-main">
+
         <section class="tier-heading">
             <div>
                 <p class="eyebrow">НАШИ ОБЩИЕ ПРИОРИТЕТЫ</p>
-                <h1 id="tier-title">Крупные покупки<span>.</span></h1>
-                <p class="tier-subtitle">
+
+                <h1 id="tier-title">
+                    Загружаю тир-лист<span>.</span>
+                </h1>
+
+                <p class="tier-subtitle" id="tier-subtitle">
                     Расставляйте хотелки по важности и решайте,
                     на что стоит копить в первую очередь.
                 </p>
             </div>
 
             <div class="tier-heading-actions">
-                <button class="secondary-button" id="export-button" type="button">
+                <button
+                    class="secondary-button"
+                    id="export-button"
+                    type="button"
+                >
                     ↓ Скачать PNG
                 </button>
 
-                <button class="submit-button add-wish-button" id="add-item-button" type="button">
+                <button
+                    class="submit-button add-wish-button"
+                    id="add-item-button"
+                    type="button"
+                >
                     + Добавить хотелку
                 </button>
             </div>
@@ -46,12 +61,21 @@
 
         <div class="tier-toolbar">
             <span id="item-count">0 хотелок</span>
+
             <span class="autosave-status" id="save-status">
-                Автосохранение включено
+                Подключаю базу...
             </span>
         </div>
 
+        <!-- Эта область полностью попадёт в PNG -->
         <div class="tier-board" id="tier-board">
+
+            <div class="tier-board-title">
+                <span class="tier-board-brand">НХ.</span>
+                <h2 id="export-title">Наши хотелки</h2>
+                <p id="export-subtitle">НАШИ ОБЩИЕ ПРИОРИТЕТЫ</p>
+            </div>
+
             <section class="tier-row">
                 <div class="tier-label rank-s">S</div>
                 <div class="tier-items" data-rank="S"></div>
@@ -76,6 +100,7 @@
                 <div class="tier-label rank-d">D</div>
                 <div class="tier-items" data-rank="D"></div>
             </section>
+
         </div>
 
         <section class="activity-section">
@@ -87,17 +112,20 @@
             </div>
 
             <div class="activity-list" id="activity-list">
-                <p class="empty-activity">Здесь появятся ваши действия.</p>
+                <p class="empty-activity">Загружаю историю...</p>
             </div>
         </section>
 
         <p class="prototype-note">
-            Сейчас данные хранятся в этом браузере.
-            Общую синхронизацию между участниками подключим через Supabase.
+            Изменения сохраняются в облаке. Превью товара может быть
+            недоступно, если магазин запрещает извлечение изображений.
         </p>
+
     </main>
 
-    <!-- Окно добавления хотелки -->
+
+    <!-- ОКНО ДОБАВЛЕНИЯ ХОТЕЛКИ -->
+
     <div class="tier-modal-overlay" id="item-modal" hidden>
         <section
             class="tier-modal"
@@ -105,33 +133,46 @@
             aria-modal="true"
             aria-labelledby="item-modal-title"
         >
-            <button class="modal-close" id="close-item-modal" type="button"
-                aria-label="Закрыть">×</button>
+            <button
+                class="modal-close"
+                id="close-item-modal"
+                type="button"
+                aria-label="Закрыть"
+            >×</button>
 
             <p class="eyebrow">НОВАЯ ХОТЕЛКА</p>
-            <h2 id="item-modal-title">Что хотим купить<span>?</span></h2>
+
+            <h2 id="item-modal-title">
+                Что хотим купить<span>?</span>
+            </h2>
 
             <form id="item-form">
-                <label for="item-title">Название</label>
+
+                <label for="item-title">Название покупки</label>
+
                 <input
                     id="item-title"
                     name="title"
+                    type="text"
                     maxlength="120"
                     placeholder="Например, водонагреватель"
                     required
                 >
 
-                <label for="item-description">Почему это нам нужно?</label>
+                <label for="item-description">
+                    Почему это нам нужно?
+                </label>
+
                 <textarea
                     id="item-description"
                     name="description"
                     maxlength="3000"
                     rows="4"
-                    placeholder="Опиши покупку и почему она важна..."
+                    placeholder="Опиши покупку и её важность..."
                 ></textarea>
 
+                <label for="item-emoji">Эмодзи</label>
 
-                <label for="item-emoji">Эмодзи хотелки</label>
                 <input
                     id="item-emoji"
                     name="emoji"
@@ -139,40 +180,55 @@
                     maxlength="16"
                     value="🛍️"
                     placeholder="🛒 🏠 🎸 💻"
-                />
+                >
+
                 <p class="input-hint">
-                    Выбери эмодзи, который отражает покупку.
+                    Будет отображаться, если превью товара недоступно.
                 </p>
 
-                <label for="item-purchase-url">Ссылка на покупку</label>
+                <label for="item-purchase-url">
+                    Ссылка на покупку
+                </label>
+
                 <input
                     id="item-purchase-url"
                     name="purchase-url"
                     type="url"
                     placeholder="https://example.com/product"
                     autocomplete="url"
-                />
+                >
+
                 <p class="input-hint">
-                    Вставь ссылку на товар. Попробуем автоматически получить
-                    изображение из превью сайта.
+                    Вставь ссылку на конкретный товар.
                 </p>
 
                 <div class="link-preview" id="link-preview" hidden>
                     <div class="link-preview-media">
-                        <img id="link-preview-image" alt="" hidden />
+                        <img
+                            id="link-preview-image"
+                            alt=""
+                            hidden
+                        >
+
                         <span id="link-preview-emoji">🛍️</span>
                     </div>
 
                     <div class="link-preview-info">
-                        <strong id="link-preview-title">Превью товара</strong>
-                        <span id="link-preview-status" aria-live="polite">
+                        <strong id="link-preview-title">
+                            Превью товара
+                        </strong>
+
+                        <span
+                            id="link-preview-status"
+                            aria-live="polite"
+                        >
                             Ожидаю ссылку...
                         </span>
                     </div>
                 </div>
 
-
                 <label for="item-rank">Начальный ранг</label>
+
                 <select id="item-rank" name="rank">
                     <option value="S">S — максимальный приоритет</option>
                     <option value="A">A — очень важно</option>
@@ -181,16 +237,27 @@
                     <option value="D">D — низкий приоритет</option>
                 </select>
 
-                <button class="submit-button" id="save-item-button" type="submit">
+                <button
+                    class="submit-button"
+                    id="save-item-button"
+                    type="submit"
+                >
                     Добавить в тир-лист <span>→</span>
                 </button>
 
-                <p class="form-message" id="item-form-message" aria-live="polite"></p>
+                <p
+                    class="form-message"
+                    id="item-form-message"
+                    aria-live="polite"
+                ></p>
+
             </form>
         </section>
     </div>
 
-    <!-- Окно подробностей -->
+
+    <!-- ОКНО ПОДРОБНОСТЕЙ -->
+
     <div class="tier-modal-overlay" id="details-modal" hidden>
         <section
             class="tier-modal details-modal"
@@ -198,11 +265,14 @@
             aria-modal="true"
             aria-labelledby="details-title"
         >
-            <button class="modal-close" id="close-details-modal" type="button"
-                aria-label="Закрыть">×</button>
+            <button
+                class="modal-close"
+                id="close-details-modal"
+                type="button"
+                aria-label="Закрыть"
+            >×</button>
 
             <p class="eyebrow">ПОДРОБНОСТИ ХОТЕЛКИ</p>
-
 
             <div class="details-emoji" id="details-emoji">🛍️</div>
 
@@ -212,6 +282,15 @@
                 alt=""
                 hidden
             >
+
+            <h2 id="details-title">Название<span>.</span></h2>
+
+            <p
+                class="details-description"
+                id="details-description"
+            ></p>
+
+            <p class="details-rank" id="details-rank"></p>
 
             <a
                 class="purchase-link"
@@ -224,23 +303,31 @@
                 Открыть сайт покупки ↗
             </a>
 
-
-            <h2 id="details-title">Название<span>.</span></h2>
-            <p class="details-description" id="details-description"></p>
-            <p class="details-rank" id="details-rank"></p>
-
             <div class="details-actions">
-                <button class="submit-button" id="purchase-button" type="button">
+                <button
+                    class="submit-button"
+                    id="purchase-button"
+                    type="button"
+                >
                     ✓ Отметить купленной
                 </button>
 
-                <button class="secondary-button danger-button" id="delete-button" type="button">
+                <button
+                    class="secondary-button danger-button"
+                    id="delete-button"
+                    type="button"
+                >
                     Удалить хотелку
                 </button>
             </div>
 
-            <p class="form-message" id="details-message" aria-live="polite"></p>
+            <p
+                class="form-message"
+                id="details-message"
+                aria-live="polite"
+            ></p>
         </section>
     </div>
+
 </body>
 </html>
