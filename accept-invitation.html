@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Приглашение в семью — Наши хотелки</title>
+
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="accept-invitation.js" defer></script>
+</head>
+<body class="tier-page">
+
+    <header class="site-header">
+        <a class="logo" href="index.html">НХ<span>.</span></a>
+        <a class="back-link" href="families.html">← Мои семьи</a>
+    </header>
+
+    <main class="invite-result-main">
+        <section class="family-modal invite-result-card">
+            <p class="eyebrow">ПРИГЛАШЕНИЕ В СЕМЬЮ</p>
+
+            <h1 id="invite-heading">Проверяем приглашение<span>.</span></h1>
+
+            <p
+                class="modal-description"
+                id="invite-status"
+                aria-live="polite"
+            >
+                Проверяем ссылку и твой аккаунт...
+            </p>
+
+            <a
+                class="submit-button invite-family-link"
+                id="invite-family-link"
+                href="families.html"
+                hidden
+            >
+                Открыть семью <span>→</span>
+            </a>
+
+            <a class="back-link invite-back-link" href="families.html">
+                Перейти к моим семьям
+            </a>
+        </section>
+    </main>
+
+</body>
+</html>

@@ -1929,3 +1929,48 @@ button:disabled {
         width: 100%;
     }
 }
+
+.invite-result-main {
+    display: grid;
+    place-items: center;
+    min-height: calc(100vh - 84px);
+    padding: 30px 20px;
+}
+
+.invite-result-card {
+    width: 100%;
+    max-width: 520px;
+}
+
+.invite-result-card h1 {
+    margin: 18px 0;
+    font-size: 32px;
+    letter-spacing: -1px;
+    overflow-wrap: anywhere;
+}
+
+.invite-result-card h1 span {
+    color: var(--accent);
+}
+
+.invite-family-link {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    margin: 25px 0 18px;
+    padding: 15px;
+    border-radius: 9px;
+    color: #171a11;
+    font-weight: 700;
+    text-decoration: none;
+}
+
+.invite-family-link[hidden] {
+    display: none;
+}
+
+.invite-back-link {
+    display: inline-block;
+    margin-top: 15px;
+}

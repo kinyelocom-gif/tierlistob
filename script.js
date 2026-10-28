@@ -22,13 +22,74 @@ const confirmPassword = document.querySelector("#confirm-password");
 const message = document.querySelector("#form-message");
 const logoutButton = document.querySelector("#logout-button");
 
-let isRegisterMode = false;
 let supabaseClient = null;
+let isRegisterMode = false;
+
+
+/* =========================================
+   ПОЛУЧЕНИЕ ТОКЕНА ПРИГЛАШЕНИЯ
+========================================= */
+
+function getInviteToken() {
+    const params = new URLSearchParams(window.location.search);
+
+    // Токен из адреса страницы входа.
+    const urlToken = params.get("inviteToken");
+
+    // Токен, сохранённый при переходе со страницы приглашения.
+    const savedToken = sessionStorage.getItem("familyInviteToken");
+
+    const token = urlToken || savedToken;
+
+    if (token) {
+        sessionStorage.setItem("familyInviteToken", token);
+    }
+
+    return token;
+}
+
+
+/* =========================================
+   ВЫБОР СТРАНИЦЫ ПОСЛЕ ВХОДА
+========================================= */
+
+function getAuthDestination() {
+    const token = getInviteToken();
+
+    if (token) {
+        // Если пользователь пришёл по приглашению,
+        // после авторизации возвращаем его к приглашению.
+        const url = new URL(
+            "accept-invitation.html",
+            window.location.href
+        );
+
+        url.searchParams.set("token", token);
+
+        return url.href;
+    }
+
+    // Обычный вход — переходим к выбору семей.
+    return new URL(
+        "famswitcher.html",
+        window.location.href
+    ).href;
+}
+
+
+/* =========================================
+   СООБЩЕНИЯ
+========================================= */
 
 function showMessage(text, isError = false) {
     message.textContent = text;
     message.classList.toggle("error", isError);
 }
+
+
+/* =========================================
+   ПЕРЕКЛЮЧЕНИЕ ВХОДА И РЕГИСТРАЦИИ
+========================================= */
 
 function setMode(registerMode) {
     isRegisterMode = registerMode;
@@ -61,58 +122,30 @@ function setMode(registerMode) {
         : "current-password";
 
     logoutButton.hidden = true;
+
     showMessage("");
 }
 
 loginTab.addEventListener("click", () => setMode(false));
 registerTab.addEventListener("click", () => setMode(true));
 
-function initializeSupabase() {
-    const hasConfig =
-        SUPABASE_URL.startsWith("https://") &&
-        SUPABASE_PUBLISHABLE_KEY.length > 10 &&
-        !SUPABASE_PUBLISHABLE_KEY.includes("ВСТАВЬ");
 
-    if (!window.supabase) {
-        showMessage(
-            "Не удалось загрузить Supabase. Проверь подключение к интернету.",
-            true
-        );
-        return;
-    }
-
-    if (!hasConfig) {
-        showMessage(
-            "Сначала укажи Project URL и Publishable key в script.js.",
-            true
-        );
-        return;
-    }
-
-    try {
-        supabaseClient = window.supabase.createClient(
-            SUPABASE_URL,
-            SUPABASE_PUBLISHABLE_KEY
-        );
-    } catch (error) {
-        console.error(error);
-
-        showMessage(
-            "Не удалось настроить Supabase. Проверь URL и ключ.",
-            true
-        );
-    }
-}
+/* =========================================
+   РЕГИСТРАЦИЯ И ВХОД
+========================================= */
 
 form.addEventListener("submit", async (event) => {
     event.preventDefault();
 
     if (!supabaseClient) {
-        showMessage("Supabase ещё не настроен.", true);
+        showMessage(
+            "Supabase не подключён. Проверь URL и Publishable key.",
+            true
+        );
         return;
     }
 
-    const email = emailInput.value.trim();
+    const email = emailInput.value.trim().toLowerCase();
     const password = passwordInput.value;
 
     if (isRegisterMode && password !== confirmPassword.value) {
@@ -120,7 +153,9 @@ form.addEventListener("submit", async (event) => {
         return;
     }
 
-    if (isRegisterMode && nameInput.value.trim().length < 2) {
+    const displayName = nameInput.value.trim();
+
+    if (isRegisterMode && displayName.length < 2) {
         showMessage("Имя должно содержать минимум 2 символа.", true);
         return;
     }
@@ -132,39 +167,49 @@ form.addEventListener("submit", async (event) => {
     showMessage("Обработка запроса...");
 
     try {
+        /* ---------- РЕГИСТРАЦИЯ ---------- */
+
         if (isRegisterMode) {
-            const displayName = nameInput.value.trim();
+            // Важно: если пользователь пришёл по приглашению,
+            // ссылка подтверждения почты должна вернуть его
+            // именно на страницу принятия приглашения.
+            const redirectUrl = getAuthDestination();
 
-            const redirectUrl = window.location.href.split(/[?#]/)[0];
-
-            const { data, error } = await supabaseClient.auth.signUp({
-                email,
-                password,
-                options: {
-                    emailRedirectTo: redirectUrl,
-                    data: {
-                        display_name: displayName
+            const { data, error } =
+                await supabaseClient.auth.signUp({
+                    email,
+                    password,
+                    options: {
+                        emailRedirectTo: redirectUrl,
+                        data: {
+                            display_name: displayName
+                        }
                     }
-                }
-            });
+                });
 
             if (error) {
                 throw error;
             }
 
+            // Некоторые настройки Supabase позволяют сразу войти,
+            // если подтверждение почты не требуется.
             if (data.session) {
-                showMessage(
-                    `Аккаунт создан. Ты вошёл как ${displayName}.`
-                );
-
-                logoutButton.hidden = false;
-            } else {
-                showMessage(
-                    "Регистрация отправлена! Проверь почту и перейди " +
-                    "по ссылке подтверждения, затем войди в аккаунт."
-                );
+                window.location.replace(getAuthDestination());
+                return;
             }
+
+            // При включённом подтверждении почты ждём перехода
+            // пользователя по ссылке из письма.
+            showMessage(
+                "Аккаунт создан! Проверь почту и подтверди адрес. " +
+                "После подтверждения ты вернёшься к приглашению " +
+                "или попадёшь на страницу своих семей."
+            );
+
         } else {
+
+            /* ---------- ВХОД ---------- */
+
             const { data, error } =
                 await supabaseClient.auth.signInWithPassword({
                     email,
@@ -175,16 +220,16 @@ form.addEventListener("submit", async (event) => {
                 throw error;
             }
 
-            const displayName =
-                data.user.user_metadata?.display_name || data.user.email;
+            // При обычном входе откроются семьи.
+            // При входе по приглашению откроется его принятие.
+            if (data.session) {
+                window.location.replace(getAuthDestination());
+                return;
+            }
 
-            showMessage(`Вход выполнен. Привет, ${displayName}!`);
-
-
-            logoutButton.hidden = false;
-
-            window.location.href = "famswitcher.html";
+            showMessage("Не удалось получить активную сессию.", true);
         }
+
     } catch (error) {
         console.error("Ошибка авторизации:", error);
 
@@ -209,12 +254,18 @@ form.addEventListener("submit", async (event) => {
                 true
             );
         }
+
     } finally {
         submitButton.disabled = false;
         loginTab.disabled = false;
         registerTab.disabled = false;
     }
 });
+
+
+/* =========================================
+   ВЫХОД ИЗ АККАУНТА
+========================================= */
 
 logoutButton.addEventListener("click", async () => {
     if (!supabaseClient) {
@@ -234,32 +285,102 @@ logoutButton.addEventListener("click", async () => {
         setMode(false);
 
         showMessage("Ты вышел из аккаунта.");
+
     } catch (error) {
         console.error("Ошибка выхода:", error);
-        showMessage(error.message || "Не удалось выйти.", true);
+
+        showMessage(
+            error.message || "Не удалось выйти из аккаунта.",
+            true
+        );
+
     } finally {
         logoutButton.disabled = false;
     }
 });
+
+
+/* =========================================
+   ПРОВЕРКА ТЕКУЩЕЙ СЕССИИ
+========================================= */
 
 async function checkSession() {
     if (!supabaseClient) {
         return;
     }
 
-    const { data, error } = await supabaseClient.auth.getSession();
+    const { data, error } =
+        await supabaseClient.auth.getSession();
 
     if (error) {
-        showMessage("Не удалось проверить авторизацию.", true);
+        showMessage(
+            "Не удалось проверить авторизацию.",
+            true
+        );
         return;
     }
 
+    // Если пользователь уже авторизован,
+    // повторный вход ему не нужен.
     if (data.session) {
-    window.location.replace("famswitcher.html");
-    return;
+        window.location.replace(getAuthDestination());
+    }
 }
+
+
+/* =========================================
+   ИНИЦИАЛИЗАЦИЯ SUPABASE
+========================================= */
+
+function initializeSupabase() {
+    if (!window.supabase) {
+        showMessage(
+            "Не удалось загрузить библиотеку Supabase. " +
+            "Проверь подключение к интернету.",
+            true
+        );
+        return;
+    }
+
+    const hasConfig =
+        SUPABASE_URL.startsWith("https://") &&
+        !SUPABASE_URL.includes("ВСТАВЬ") &&
+        SUPABASE_PUBLISHABLE_KEY.length > 10 &&
+        !SUPABASE_PUBLISHABLE_KEY.includes("ВСТАВЬ");
+
+    if (!hasConfig) {
+        showMessage(
+            "Укажи Project URL и Publishable key в script.js.",
+            true
+        );
+        return;
+    }
+
+    try {
+        supabaseClient = window.supabase.createClient(
+            SUPABASE_URL,
+            SUPABASE_PUBLISHABLE_KEY
+        );
+
+        checkSession().catch((error) => {
+            console.error("Ошибка проверки сессии:", error);
+            showMessage("Не удалось проверить текущую сессию.", true);
+        });
+
+    } catch (error) {
+        console.error("Ошибка подключения Supabase:", error);
+
+        showMessage(
+            "Не удалось подключиться к Supabase.",
+            true
+        );
+    }
 }
+
+
+/* =========================================
+   ЗАПУСК
+========================================= */
 
 setMode(false);
 initializeSupabase();
-checkSession();
