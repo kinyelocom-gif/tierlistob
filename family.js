@@ -686,7 +686,7 @@ deleteFamilyButton.addEventListener("click", async () => {
             throw error;
         }
 
-        window.location.replace("families.html");
+        window.location.replace("famswitcher.html");
     } catch (error) {
         console.error("Ошибка удаления семьи:", error);
 
