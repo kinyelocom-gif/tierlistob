@@ -8,63 +8,137 @@
     <title>Семья — Наши хотелки</title>
 
     <link rel="stylesheet" href="style.css">
+
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="family.js" defer></script>
 </head>
+
 <body class="tier-page">
 
+    <!-- Верхняя панель -->
     <header class="site-header">
-        <a class="logo" href="famswitcher.html">НХ<span>.</span></a>
-        <a class="back-link" href="famswitcher.html">← Все семьи</a>
+        <a class="logo" href="famswitcher.html" aria-label="Наши хотелки">
+            НХ<span>.</span>
+        </a>
+
+        <a class="back-link" href="famswitcher.html">
+            ← Все семьи
+        </a>
     </header>
 
+
+    <!-- Основное содержимое семьи -->
     <main class="family-detail-main">
+
+        <!-- Информация о семье -->
         <section class="family-detail-heading">
             <div>
-                <p class="eyebrow">ВАШЕ ОБЩЕЕ ПРОСТРАНСТВО</p>
-                <h1 id="family-title">Загружаю семью<span>.</span></h1>
+                <p class="eyebrow">
+                    ВАШЕ ОБЩЕЕ ПРОСТРАНСТВО
+                </p>
+
+                <h1 id="family-title">
+                    Загружаю семью<span>.</span>
+                </h1>
+
                 <p class="tier-subtitle" id="family-description">
-                    Общие планы и приоритеты.
+                    Общие планы, хотелки и приоритеты.
                 </p>
             </div>
 
-            <div class="family-detail-stats">
-                <span id="members-count">— участников</span>
-                <span id="lists-count">— из 3 тир-листов</span>
+            <div class="family-detail-actions">
+                <div class="family-detail-stats">
+                    <span id="members-count">
+                        Загружаю участников...
+                    </span>
+
+                    <span id="lists-count">
+                        Загружаю тир-листы...
+                    </span>
+                </div>
+
+                <button
+                    class="secondary-button"
+                    id="invite-member-button"
+                    type="button"
+                    hidden
+                >
+                    ✉ Пригласить участника
+                </button>
             </div>
         </section>
 
+
+        <!-- Тир-листы семьи -->
         <section class="family-tierlists-section">
             <div class="section-heading">
                 <h2>Тир-листы</h2>
-                <span>Каждый список — отдельные приоритеты</span>
+
+                <span>
+                    Отдельные списки ваших приоритетов
+                </span>
             </div>
 
             <p
                 class="families-feedback"
                 id="family-message"
                 aria-live="polite"
-            >Загружаю тир-листы...</p>
+            >
+                Загружаю тир-листы...
+            </p>
 
-            <div class="family-tierlists-grid" id="tierlists-grid"></div>
+            <div
+                class="family-tierlists-grid"
+                id="tierlists-grid"
+            ></div>
         </section>
 
+
+        <!-- Участники -->
         <section class="family-members-section">
             <div class="section-heading">
                 <h2>Участники</h2>
-                <span>Ваша команда</span>
+
+                <span>
+                    Ваша команда
+                </span>
             </div>
 
-            <div class="family-members-list" id="family-members-list"></div>
+            <div
+                class="family-members-list"
+                id="family-members-list"
+            ></div>
 
             <p class="prototype-note">
-                Приглашения по электронной почте добавим следующим этапом.
+                Участники смогут вместе добавлять хотелки,
+                менять их приоритеты и отмечать покупки.
             </p>
         </section>
+
+
+        <!-- Нижняя подпись -->
+        <footer class="families-footer">
+            <span>
+                НХ. — ВАШИ ПЛАНЫ, ВАШИ ПРАВИЛА.
+            </span>
+
+            <span>
+                До 3 тир-листов на семью
+            </span>
+        </footer>
+
     </main>
 
-    <!-- Окно создания тир-листа -->
-    <div class="modal-overlay" id="tierlist-modal" hidden>
+
+    <!-- ==========================================
+         МОДАЛЬНОЕ ОКНО СОЗДАНИЯ ТИР-ЛИСТА
+    =========================================== -->
+
+    <div
+        class="modal-overlay"
+        id="tierlist-modal"
+        hidden
+    >
         <section
             class="family-modal"
             role="dialog"
@@ -75,18 +149,29 @@
                 class="modal-close"
                 id="close-tierlist-modal"
                 type="button"
-                aria-label="Закрыть"
-            >×</button>
+                aria-label="Закрыть окно"
+            >
+                ×
+            </button>
 
-            <p class="eyebrow">НОВЫЙ СПИСОК</p>
-            <h2 id="tierlist-modal-title">Создать тир-лист<span>.</span></h2>
+            <p class="eyebrow">
+                НОВЫЙ СПИСОК
+            </p>
+
+            <h2 id="tierlist-modal-title">
+                Создать тир-лист<span>.</span>
+            </h2>
 
             <p class="modal-description">
-                Например, «Крупные покупки», «Для дома» или «Для удовольствия».
+                Например, «Крупные покупки», «Для дома»
+                или «Для удовольствия».
             </p>
 
             <form id="create-tierlist-form">
-                <label for="tierlist-name">Название тир-листа</label>
+
+                <label for="tierlist-name">
+                    Название тир-листа
+                </label>
 
                 <input
                     id="tierlist-name"
@@ -95,6 +180,7 @@
                     minlength="2"
                     maxlength="80"
                     placeholder="Например, Крупные покупки"
+                    autocomplete="off"
                     required
                 >
 
@@ -106,8 +192,91 @@
                     Создать список <span>→</span>
                 </button>
 
-                <p class="form-message" id="tierlist-modal-message"
-                   aria-live="polite"></p>
+                <p
+                    class="form-message"
+                    id="tierlist-modal-message"
+                    aria-live="polite"
+                ></p>
+
+            </form>
+        </section>
+    </div>
+
+
+    <!-- ==========================================
+         МОДАЛЬНОЕ ОКНО ПРИГЛАШЕНИЯ ПО EMAIL
+    =========================================== -->
+
+    <div
+        class="modal-overlay"
+        id="invite-modal"
+        hidden
+    >
+        <section
+            class="family-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="invite-modal-title"
+        >
+            <button
+                class="modal-close"
+                id="close-invite-modal"
+                type="button"
+                aria-label="Закрыть окно"
+            >
+                ×
+            </button>
+
+            <p class="eyebrow">
+                РАСШИРЯЕМ КОМАНДУ
+            </p>
+
+            <h2 id="invite-modal-title">
+                Пригласить близких<span>.</span>
+            </h2>
+
+            <p class="modal-description">
+                Введи электронную почту человека.
+                Мы отправим ему письмо со ссылкой для вступления
+                в эту семью.
+            </p>
+
+            <form id="invite-form">
+
+                <label for="invite-email">
+                    Электронная почта
+                </label>
+
+                <input
+                    id="invite-email"
+                    name="email"
+                    type="email"
+                    placeholder="name@example.com"
+                    autocomplete="email"
+                    maxlength="254"
+                    required
+                >
+
+                <p class="invite-form-note">
+                    Ссылка будет действовать 7 дней.
+                    Принять приглашение можно только с аккаунта,
+                    зарегистрированного на указанный email.
+                </p>
+
+                <button
+                    class="submit-button"
+                    id="send-invite-button"
+                    type="submit"
+                >
+                    Отправить приглашение <span>→</span>
+                </button>
+
+                <p
+                    class="form-message"
+                    id="invite-message"
+                    aria-live="polite"
+                ></p>
+
             </form>
         </section>
     </div>

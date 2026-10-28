@@ -1895,3 +1895,37 @@ button:disabled {
         height: 64px;
     }
 }
+
+
+.family-detail-actions {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+    min-width: 210px;
+}
+
+.family-detail-actions .family-detail-stats {
+    width: 100%;
+}
+
+.family-detail-actions > button {
+    width: 100%;
+    white-space: normal;
+}
+
+.family-detail-actions > button[hidden] {
+    display: none;
+}
+
+.invite-form-note {
+    color: var(--muted);
+    font-size: 12px;
+    line-height: 1.6;
+}
+
+@media (max-width: 850px) {
+    .family-detail-actions {
+        width: 100%;
+    }
+}
